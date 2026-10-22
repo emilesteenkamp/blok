@@ -4,7 +4,7 @@ Oct 22, 2026 · @Emile
 
 ## Status
 
-- [ ] Phase 0 — De-risk: Lua-on-Web spike
+- [x] Phase 0 — De-risk: Lua-on-Web spike
 - [ ] Phase 1 — Workspace scaffolding
 - [ ] Phase 2 — `block-ir`: shared schema
 - [ ] Phase 3 — `lua-transpiler`: IR → Lua + source map
@@ -31,9 +31,11 @@ As each phase completes, its commit checks off that phase's own tasks here, as p
 
 ## Phase 0 — De-risk: Lua-on-Web spike
 
-- [ ] Build a minimal standalone crate targeting `wasm32-unknown-unknown` with `mlua` (vendored) and determine whether it builds
-- [ ] Verify `piccolo` (pure-Rust Lua VM) builds for the real target and genuinely executes/steps a script, via `wasm-bindgen --target nodejs` + Node
-- [ ] Record the outcome in `docs/technical-design.md`'s "Execution runtime" section and "Open risks" table
+- [x] Build a minimal standalone crate targeting `wasm32-unknown-unknown` with `mlua` (vendored) and determine whether it builds
+- [x] Verify `piccolo` (pure-Rust Lua VM) builds for the real target and genuinely executes/steps a script, via `wasm-bindgen --target nodejs` + Node
+- [x] Record the outcome in `docs/technical-design.md`'s "Execution runtime" section and "Open risks" table
+
+The spike code itself was throwaway (not committed; only `docs/technical-design.md`'s updated decision record is). Outcome: mlua is confirmed incompatible with the real Web target (`lua-src` has no build recipe for `wasm32-unknown-unknown`, only `wasm32-unknown-emscripten`), so the project switched to piccolo everywhere — one runtime, not a mlua-on-Desktop/piccolo-on-Web split. Follow-up carried into Phase 4: piccolo has no `debug` library, so step/variable-inspection must use its native `Executor`/`Fuel` API and Rust-level frame access instead of Lua debug hooks.
 
 ## Phase 1 — Workspace scaffolding
 

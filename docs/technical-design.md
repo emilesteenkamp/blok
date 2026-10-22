@@ -43,17 +43,23 @@ blok is a Scratch-style drag-and-drop programming environment for general-purpos
 - Undo/redo
 - Touch support (deferred with Mobile, but worth designing for now)
 
-## Execution runtime: embedded Lua (mlua/rlua)
+## Execution runtime: embedded Lua-like VM (piccolo)
 
-**Decision**: transpile the block workspace to Lua source and execute it with an embedded Lua VM via mlua/rlua (bindings to C Lua).
+**Decision**: transpile the block workspace to Lua source and execute it with `piccolo`, a pure-Rust, stackless, interruptible-by-design Lua VM, on every platform (Desktop, Web, and later Mobile).
 
-**Rationale**: Lua's `debug` library (`sethook`, `getlocal`/`getupvalue`) combined with running the script inside a coroutine is a well-established pattern for step-through debugging and scope inspection — the same technique real Lua debuggers (e.g. ZeroBrane) use. It gives most of the step-execution and variable-inspection machinery for free instead of hand-rolling a custom interpreter.
+**Superseded decision**: this project originally chose mlua/rlua (bindings to C Lua) for their full Lua semantics and `debug`-library-based step/inspect machinery. A validation spike (see below) confirmed mlua cannot be used on Dioxus Web's actual target, which forced a reconsideration.
 
-**Risk**: mlua/rlua link against C Lua, and WASM target support (needed for the Web/Dioxus-web target) is unofficial and unproven.
+**Validation spike findings (2026-10-22)**:
 
-**Decision made**: keep mlua/rlua for its full Lua semantics and debug hooks. This needs a validation spike — confirming mlua builds and runs for `wasm32-unknown-unknown`, or finding an alternate execution strategy for the Web target — before the architecture depends on it (tracked under Open risks).
+- **mlua/rlua confirmed incompatible with `wasm32-unknown-unknown`** — not just "unproven" as originally flagged. mlua's vendored build delegates to the `lua-src` crate, which hard-codes a target allowlist (Linux/BSD/Darwin/iOS/Windows/`*-emscripten`) and panics on any other target, including `wasm32-unknown-unknown`. The only wasm target it supports is `wasm32-unknown-emscripten` — a different, heavier toolchain that Dioxus Web does not use (Dioxus Web builds `wasm32-unknown-unknown` via `wasm-bindgen`). There is no straightforward way to make mlua's vendored Lua-C build work on the target this project actually needs.
+- **piccolo builds and runs correctly on `wasm32-unknown-unknown`** — verified by compiling a spike crate for that target, running it through `wasm-bindgen --target nodejs` + Node (the same deployment mechanism Dioxus Web uses, not just a standalone wasm runtime), and confirming a Lua-like script executed with correct output. Driving `Executor::step()` with a 1-fuel-unit budget per call took 12 steps to complete a 5-iteration loop, confirming genuine pause/resume stepping — the mechanism step-through debugging needs.
 
-**Alternative considered**: `piccolo`, a pure-Rust, stackless, interruptible-by-design Lua VM with no WASM linking issues. Rejected in favor of mlua/rlua's full Lua semantics and stdlib, with the WASM risk tracked as a follow-up instead.
+**Rationale for a single runtime across platforms**: using mlua on Desktop and piccolo on Web would mean two different language implementations running the same transpiled source, with no guarantee the same block program behaves identically on both platforms. A single `piccolo` runtime everywhere avoids that split at the cost of mlua's full Lua semantics.
+
+**Known gaps to design around**:
+
+- piccolo does not implement Lua's `debug` library (`sethook`, `getlocal`, `getupvalue`, etc. are explicitly "will not implement" per piccolo's own compatibility notes). Stepping is instead driven through piccolo's native `Executor::step`/`Fuel` API (already verified above) rather than `debug.sethook`. Variable inspection will need a new design built on piccolo's native Rust frame/register access rather than Lua-level `debug.getlocal` calls — not yet spiked, tracked as a follow-up before the `runtime` crate (Phase 4) is implemented.
+- piccolo's stdlib is missing pieces a transpiler might otherwise lean on: no `string.find`/`match`/`gmatch`/`gsub`/`format`, no `table.insert`/`remove`/`sort`/`concat`, no `tonumber`. `lua-transpiler` must avoid emitting calls to these, or emit pure-Lua polyfills for the ones that are expressible without C (e.g. `table.insert`/`remove`/`concat`); pattern-matching functions have no easy polyfill and are a real functionality loss versus full Lua.
 
 ## Workspace architecture
 
@@ -77,6 +83,8 @@ The app shell is the only orchestrator: it takes the block tree from `block-edit
 
 | Risk | Why it matters | Follow-up |
 | --- | --- | --- |
-| mlua on `wasm32-unknown-unknown` | Web target compiles to WASM; mlua links C Lua, and WASM support is unofficial | Spike: confirm mlua builds/runs for Web, or find an alternate execution strategy for that target |
+| ~~mlua on `wasm32-unknown-unknown`~~ — **resolved 2026-10-22** | Spike confirmed mlua cannot build for Web's actual target; switched to `piccolo` everywhere (see Execution runtime section) | Closed |
+| piccolo variable inspection | piccolo has no `debug.getlocal`/`getupvalue`; locals must be read via its native Rust frame API instead | Spike this before implementing the `runtime` crate (Phase 4) |
+| piccolo stdlib gaps | No string pattern matching (`find`/`match`/`gmatch`/`gsub`/`format`), no `table.insert`/`remove`/`sort`/`concat`, no `tonumber` | `lua-transpiler` must avoid these or emit pure-Lua polyfills where possible (Phase 3) |
 | Dioxus Mobile maturity | Weakest-supported Dioxus target, especially iOS | Deprioritized for MVP; revisit once Desktop + Web are solid |
 | Custom drag-and-drop effort | Block model, connector rendering, hit-testing, undo/redo, and touch support are all being built from scratch | Size the editor as its own workstream before committing to a timeline |
