@@ -1,0 +1,58 @@
+:root {
+  --color-bg: #0b0d10;
+  --color-fg: #fafafa;
+  --color-fg-muted: #9ca3af;
+  --color-border: #2a2d33;
+  --color-accent: #4f6bff;
+
+  --font-sans: "Inter", "IBM Plex Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+
+  --motion-fast: 140ms ease-out;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-bg: #fafafa;
+    --color-fg: #0b0d10;
+    --color-fg-muted: #6b7280;
+    --color-border: #e5e5e5;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+}
+
+.app-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100vw;
+}
+
+.empty-state {
+  color: var(--color-fg-muted);
+  font-size: 0.95rem;
+}

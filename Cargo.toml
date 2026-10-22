@@ -1,0 +1,16 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/app",
+    "crates/block-ir",
+    "crates/block-editor",
+    "crates/lua-transpiler",
+    "crates/runtime",
+    "crates/runtime-protocol",
+    "crates/console",
+    "crates/debug-panel",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"

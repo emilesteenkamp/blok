@@ -1,0 +1,19 @@
+[package]
+name = "app"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+dioxus = { version = "0.7" }
+block-ir = { path = "../block-ir" }
+block-editor = { path = "../block-editor" }
+lua-transpiler = { path = "../lua-transpiler" }
+runtime = { path = "../runtime" }
+runtime-protocol = { path = "../runtime-protocol" }
+console = { path = "../console" }
+debug-panel = { path = "../debug-panel" }
+
+[features]
+default = ["desktop"]
+desktop = ["dioxus/desktop"]
+web = ["dioxus/web"]

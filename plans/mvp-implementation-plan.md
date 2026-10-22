@@ -5,7 +5,7 @@ Oct 22, 2026 · @Emile
 ## Status
 
 - [x] Phase 0 — De-risk: Lua-on-Web spike
-- [ ] Phase 1 — Workspace scaffolding
+- [x] Phase 1 — Workspace scaffolding
 - [ ] Phase 2 — `block-ir`: shared schema
 - [ ] Phase 3 — `lua-transpiler`: IR → Lua + source map
 - [ ] Phase 4 — `runtime-protocol` + `runtime`: execution engine
@@ -39,10 +39,10 @@ The spike code itself was throwaway (not committed; only `docs/technical-design.
 
 ## Phase 1 — Workspace scaffolding
 
-- [ ] Cargo workspace with all 8 crates: `block-ir`, `block-editor`, `lua-transpiler`, `runtime`, `runtime-protocol`, `console`, `debug-panel`, `app`
-- [ ] App shell boots on Desktop (`wry`)
-- [ ] App shell boots on Web (`wasm-bindgen`/`dx serve`)
-- [ ] Design tokens (`docs/design-language.md`) wired as a shared base, applied to the shell
+- [x] Cargo workspace with all 8 crates: `block-ir`, `block-editor`, `lua-transpiler`, `runtime`, `runtime-protocol`, `console`, `debug-panel`, `app`
+- [x] App shell boots on Desktop (`wry`) — verified by running it, not just compiling
+- [x] App shell boots on Web (`wasm-bindgen`/`dx serve`) — verified with a headless-Chrome screenshot of the served page
+- [x] Design tokens (`docs/design-language.md`) wired as a shared base (`crates/app/assets/theme.css`), applied to the shell's themed empty state
 - [ ] Mobile target — deliberately deferred, not part of this phase, per the docs' sequencing call
 
 ## Phase 2 — `block-ir`: shared schema

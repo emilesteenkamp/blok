@@ -1,0 +1,6 @@
+[package]
+name = "runtime-protocol"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]

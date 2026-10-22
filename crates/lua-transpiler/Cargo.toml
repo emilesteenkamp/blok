@@ -1,0 +1,7 @@
+[package]
+name = "lua-transpiler"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+block-ir = { path = "../block-ir" }

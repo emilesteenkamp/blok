@@ -1,0 +1,5 @@
+[application]
+name = "blok"
+
+[web.app]
+title = "blok"
