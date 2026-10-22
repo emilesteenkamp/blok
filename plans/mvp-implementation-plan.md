@@ -6,7 +6,7 @@ Oct 22, 2026 · @Emile
 
 - [x] Phase 0 — De-risk: Lua-on-Web spike
 - [x] Phase 1 — Workspace scaffolding
-- [ ] Phase 2 — `block-ir`: shared schema
+- [x] Phase 2 — `block-ir`: shared schema
 - [ ] Phase 3 — `lua-transpiler`: IR → Lua + source map
 - [ ] Phase 4 — `runtime-protocol` + `runtime`: execution engine
 - [ ] Phase 5 — `console`: I/O panel
@@ -25,7 +25,7 @@ blok started docs-only: `README.md` set MVP scope, `docs/technical-design.md` fi
 - Crates are built bottom-up along the dependency graph specified in the technical design doc (`block-ir` → `lua-transpiler` / `block-editor` → `runtime` → `console` / `debug-panel` → app shell), so each crate can be tested in isolation before integration.
 - Design-language tokens (color, type, spacing, motion) are established early and applied consistently, rather than retrofitted.
 
-Decisions in this plan track the source-of-truth docs under `docs/` — where implementation surfaces a gap or forces a choice those docs hadn't made yet, the docs get updated as part of that phase, not silently diverged from. Per `CLAUDE.md`, the `design-check` skill (and, once it exists, `language-design-check`) should be run before any UI/editor/runtime/crate-structure/language-vocabulary change during implementation.
+Decisions in this plan track the source-of-truth docs under `docs/` — where implementation surfaces a gap or forces a choice those docs hadn't made yet, the docs get updated as part of that phase, not silently diverged from. Per `CLAUDE.md`, the `design-check` and `language-design-check` skills should be run before any UI/editor/runtime/crate-structure/language-vocabulary change during implementation.
 
 As each phase completes, its commit checks off that phase's own tasks here, as part of the same commit. A commit can't reference its own hash, so hashes aren't embedded in this file — `git log --oneline -- plans/mvp-implementation-plan.md` shows which commit checked off a given phase.
 
@@ -47,13 +47,14 @@ The spike code itself was throwaway (not committed; only `docs/technical-design.
 
 ## Phase 2 — `block-ir`: shared schema
 
-- [ ] Core AST: statements, expressions, control flow (`if`, `switch`, `while`/`for`), variables
-- [ ] Built-in data structures: `List` and `Map`
-- [ ] Core-language-vs-standard-library split: single `PackageCall` node + data-driven package/function registry (math, strings)
-- [ ] `BlockId` scheme for the runtime's breakpoint/highlight contract
-- [ ] Type system (`ValueKind` + nesting/connection rules) and a `validate()` pass over a whole tree
-- [ ] Full public-API documentation and test coverage
-- [ ] A language-design doc (and a skill gating future changes to it), linked from `CLAUDE.md`
+- [x] Core AST: statements, expressions, control flow (`if`, `switch`, `while`/`for`), variables
+- [x] Built-in data structures: `List` and `Map`
+- [x] Core-language-vs-standard-library split: single `PackageCall` node + data-driven `Package`/`FunctionSignature` registry (`block_ir::packages`: `math`, `strings`)
+- [x] `BlockId` scheme for the runtime's breakpoint/highlight contract
+- [x] `ValueKind` type system + `satisfies()` nesting/connection rule, used by `validate()`
+- [x] `validate(&Program)` — duplicate ids, type mismatches, non-literal `switch` case values, zero `for`-loop step, package arity/type checks
+- [x] Full public-API documentation (`#![deny(missing_docs)]`, 9 doctests) and 35 unit/integration tests
+- [x] `docs/language-design.md` (new third source-of-truth doc) + `language-design-check` skill, both linked from `CLAUDE.md`
 
 ## Phase 3 — `lua-transpiler`: IR → Lua + source map
 

@@ -37,11 +37,19 @@ blok is a Scratch-style drag-and-drop programming environment for general-purpos
 
 **Open design work**:
 
-- Block/IR data model (tree structure, nesting and connection rules)
+- ~~Block/IR data model (tree structure, nesting and connection rules)~~ — resolved, see "Block IR schema" below
 - Connector rendering strategy (SVG paths vs. absolute-positioned elements)
 - Hit-testing and snap-to-connect behavior
 - Undo/redo
 - Touch support (deferred with Mobile, but worth designing for now)
+
+### Block IR schema
+
+**Decision**: `block-ir` draws a hard line between the core language (closed, fixed set of `ExpressionKind`/`StatementKind` variants) and the standard library (open-ended, data-driven).
+
+- **Core language** — gets a dedicated AST variant each: literals, variables, operators, `if`, `switch`, `while`/`for` loops, console I/O (`print`/read input), and the two built-in data structures, `List` and `Map`. Every node carries a `BlockId`, the same id threaded through the transpiler's source map for breakpoints and pause-highlighting.
+- **Standard library** (math, strings, …) — *not* given new AST variants. Every stdlib call goes through one `ExpressionKind::PackageCall { package, function, args }` node; what a function is named, its arity, and its argument/return types live in a `Package`/`FunctionSignature` registry (`block_ir::packages`) as plain data. Adding a stdlib function means adding a row to that registry, not touching the AST shape. Only functions piccolo implements natively are listed — no string pattern matching (`find`/`match`/`gsub`/`format`), since piccolo doesn't have it (see Execution runtime below).
+- **Nesting/connection rules** are exposed as data `block-editor` can call directly: each expression has a `ValueKind` (`Number`/`String`/`Bool`/`List`/`Map`/`Any`) and a `satisfies()` compatibility check, so the editor can decide what snaps into what without re-deriving the rules, and `block_ir::validate` runs the same checks over a whole tree (duplicate ids, type mismatches, non-literal `switch` case values, package arity/type mismatches).
 
 ## Execution runtime: embedded Lua-like VM (piccolo)
 
