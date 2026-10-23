@@ -44,8 +44,8 @@ blok's "language" is the set of blocks a program can be built from and what each
 
 Two native data structures — no user-defined structs in the MVP (post-MVP, per `README.md`):
 
-- **List** — `ListLiteral`, `ListGet { list, index }`, `ListLength { list }` (expressions), and `ListAppend`/`ListSet` (statements, mutate in place).
-- **Map** — `MapLiteral` (a vector of key/value expression pairs — keys aren't restricted to a particular `ValueKind` in the MVP), `MapGet { map, key }`, `MapLength { map }` (expressions), and `MapSet` (statement, mutates in place).
+- **List** — `ListLiteral`, `ListGet { list, index }`, `ListLength { list }` (expressions), and `ListAppend`/`ListSet` (statements, mutate in place). Lists are **0-indexed** — `ListGet { index: 0 }` is the first element — matching Python/JS and general-purpose-language expectations rather than Lua's native 1-indexing. `lua-transpiler` converts at the codegen boundary (`list[index + 1]`), so this is purely a block-ir/editor-facing convention; nothing about it leaks into the generated Lua's own semantics.
+- **Map** — `MapLiteral` (a vector of key/value expression pairs — keys aren't restricted to a particular `ValueKind` in the MVP), `MapGet { map, key }`, `MapLength { map }` (expressions), and `MapSet` (statement, mutates in place). `MapLength` can't be a single Lua expression (counting non-array table entries needs a `pairs()` loop), so `lua-transpiler` emits a small polyfill function for it — see `docs/technical-design.md`'s Execution runtime section.
 
 ### Console I/O
 

@@ -7,7 +7,7 @@ Oct 22, 2026 · @Emile
 - [x] Phase 0 — De-risk: Lua-on-Web spike
 - [x] Phase 1 — Workspace scaffolding
 - [x] Phase 2 — `block-ir`: shared schema
-- [ ] Phase 3 — `lua-transpiler`: IR → Lua + source map
+- [x] Phase 3 — `lua-transpiler`: IR → Lua + source map
 - [ ] Phase 4 — `runtime-protocol` + `runtime`: execution engine
 - [ ] Phase 5 — `console`: I/O panel
 - [ ] Phase 6 — `block-editor`: the custom DnD workspace
@@ -58,11 +58,13 @@ The spike code itself was throwaway (not committed; only `docs/technical-design.
 
 ## Phase 3 — `lua-transpiler`: IR → Lua + source map
 
-- [ ] Walk `block-ir` trees and emit Lua source text
-- [ ] Emit a source map (block id ↔ generated line/range) matching the runtime contract in `docs/technical-design.md`
-- [ ] Lower stdlib package calls to the matching native piccolo call (e.g. `math.sqrt`)
-- [ ] Lower list/map mutation to raw Lua table syntax (not `table.*` helpers — piccolo doesn't implement those)
-- [ ] Test by hand-building IR trees for each MVP construct and asserting on generated Lua text and source-map entries — no editor or runtime needed yet
+- [x] Walk `block-ir` trees and emit Lua source text
+- [x] Emit a source map (block id ↔ generated line) matching the runtime contract in `docs/technical-design.md`
+- [x] Lower stdlib package calls to the matching native piccolo call (`math.*`, `string.*`), or Lua syntax where there's no matching function (`strings.concat` → the `..` operator)
+- [x] Lower list/map mutation to raw Lua table syntax (not `table.*` helpers — piccolo doesn't implement those); a small pure-Lua polyfill prelude (`__map_length`) is emitted only when a tree actually needs it
+- [x] Test by hand-building IR trees for each MVP construct and asserting on generated Lua text and source-map entries, **plus** running the generated Lua through real piccolo and checking its actual output (not just the text) — no editor or runtime crate needed yet
+
+Decided and documented as part of this phase (`docs/language-design.md`): blok's `List`/`Map` index into are 0-indexed, matching Python/JS rather than Lua's native 1-indexing — `lua-transpiler` converts at the codegen boundary. `ReadInput` lowers to a call to a `read_input()` global that `runtime` (Phase 4) is expected to provide as a host function; this phase doesn't implement or assume how that function suspends for input.
 
 ## Phase 4 — `runtime-protocol` + `runtime`: execution engine
 
