@@ -79,20 +79,21 @@ The app shell is the only orchestrator: it takes the block tree from `block-edit
 
 `runtime` depends on neither `console` nor `block-editor`. It emits events (output, input requests, paused-at-block with locals) to the app shell, which updates `console`, feeds the new `debug-panel` crate and tells `block-editor` which block to highlight. Step, continue and breakpoint commands flow back from `debug-panel` through the shell to `runtime`. Pause positions are block ids, resolved from the transpiler's source map.
 
-**Runtime contract**
+**Runtime contract** (revised in Phase 4 — see below for why)
 
 - **Shared protocol**: `RunEvent` and `DebugCommand` types live in `runtime-protocol`, so `console`, `debug-panel` and the shell never import `runtime`.
-- **Resumable execution**: `runtime` runs the script as a coroutine that the shell resumes; it yields on each step, breakpoint and input request. This works on single-threaded Web WASM and needs no threads on Desktop.
-- **Stop and limits**: an instruction-count hook lets the shell stop runaway loops.
-- **Edits during a run**: the editor is read-only while a program runs or is paused, so source-map block ids stay valid.
-- **Breakpoints**: set on blocks in `block-editor`, held in shell state, and mapped to Lua lines through the source map before they reach `runtime`.
+- **Position/locals without debug hooks**: piccolo exposes no API at all for inspecting a paused frame's position or local variables from outside a callback (confirmed by inspecting its source before implementing Phase 4). `lua-transpiler` emits a call to `__blok_mark(id, name, value, ...)` before every statement, reporting that statement's own block id and every in-scope variable's current value as plain Lua call arguments. This one mechanism gives `runtime` both position tracking and variable inspection, with no VM introspection needed.
+- **Resumable execution**: `runtime` steps piccolo's `Executor` with a bounded `Fuel` budget per step; the `__blok_mark` callback decides whether to pause by returning `CallbackReturn::Yield` (piccolo's equivalent of `coroutine.yield()`, triggered from Rust rather than from the script) — not by a coroutine the script itself yields from, and not via `debug.sethook`. `read_input` yields the same way, resumed with the shell-provided string once a `DebugCommand::ProvideInput` arrives. This works on single-threaded Web WASM and needs no threads on Desktop.
+- **Stop and limits**: a step-count cap (`Fuel`-per-step × a maximum step count) stops runaway loops — needed because a loop with no statements in its body (e.g. `while true do end`) never calls `__blok_mark` and so never yields on its own.
+- **Edits during a run**: the editor is read-only while a program runs or is paused, so block ids stay valid.
+- **Breakpoints**: block ids set in `block-editor`, held in shell state, sent to `runtime` as `DebugCommand::SetBreakpoints` and compared *directly* against the block id each `__blok_mark` call reports — simpler than originally planned, since no source-map line translation is needed at pause time at all (the source map `lua-transpiler` still produces remains useful for mapping a Lua error's line back to a block, a separate, lower-stakes use case).
 
 ## Open risks and follow-ups
 
 | Risk | Why it matters | Follow-up |
 | --- | --- | --- |
 | ~~mlua on `wasm32-unknown-unknown`~~ — **resolved 2026-10-22** | Spike confirmed mlua cannot build for Web's actual target; switched to `piccolo` everywhere (see Execution runtime section) | Closed |
-| piccolo variable inspection | piccolo has no `debug.getlocal`/`getupvalue`; locals must be read via its native Rust frame API instead | Spike this before implementing the `runtime` crate (Phase 4) |
+| ~~piccolo variable inspection~~ — **resolved 2026-10-23** | Confirmed piccolo has *no* public API at all for frame/register inspection outside a callback — not just no `debug.getlocal`. Worked around at the language level instead: `lua-transpiler` emits a `__blok_mark(id, name, value, ...)` call before every statement, so `runtime` learns position and locals from the call's own arguments | Closed |
 | piccolo stdlib gaps | No string pattern matching (`find`/`match`/`gmatch`/`gsub`/`format`), no `table.insert`/`remove`/`sort`/`concat`, no `tonumber` | `lua-transpiler` must avoid these or emit pure-Lua polyfills where possible (Phase 3) |
 | Dioxus Mobile maturity | Weakest-supported Dioxus target, especially iOS | Deprioritized for MVP; revisit once Desktop + Web are solid |
 | Custom drag-and-drop effort | Block model, connector rendering, hit-testing, undo/redo, and touch support are all being built from scratch | Size the editor as its own workstream before committing to a timeline |

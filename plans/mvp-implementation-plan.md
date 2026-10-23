@@ -8,7 +8,7 @@ Oct 22, 2026 · @Emile
 - [x] Phase 1 — Workspace scaffolding
 - [x] Phase 2 — `block-ir`: shared schema
 - [x] Phase 3 — `lua-transpiler`: IR → Lua + source map
-- [ ] Phase 4 — `runtime-protocol` + `runtime`: execution engine
+- [x] Phase 4 — `runtime-protocol` + `runtime`: execution engine
 - [ ] Phase 5 — `console`: I/O panel
 - [ ] Phase 6 — `block-editor`: the custom DnD workspace
 - [ ] Phase 7 — `debug-panel`: step controls + variable inspector
@@ -68,13 +68,15 @@ Decided and documented as part of this phase (`docs/language-design.md`): blok's
 
 ## Phase 4 — `runtime-protocol` + `runtime`: execution engine
 
-- [ ] `runtime-protocol`: `RunEvent` (output, input-request, paused-at-block-with-locals, …) and `DebugCommand` (step, continue, breakpoint) types, dependency-free
-- [ ] `runtime`: embed piccolo, run transpiled scripts via its `Executor`
-- [ ] Drive step/breakpoint/pause behavior through `Executor::step`/`Fuel`
-- [ ] Spike variable inspection at a pause point via piccolo's native Rust frame/register access
-- [ ] Emit `RunEvent`s mapped back through the transpiler's source map to block ids
-- [ ] Instruction-count hook to stop runaway loops
-- [ ] Test headlessly: feed it Phase 3's Lua + source maps, drive it via `DebugCommand`s, assert on the `RunEvent` sequence — no UI
+- [x] `runtime-protocol`: `RunEvent` (output, input-request, paused-at-block-with-locals, finished, error) and `DebugCommand` (step, continue, set breakpoints, provide input) types, depending only on `block-ir` (for `BlockId`)
+- [x] `runtime`: embed piccolo, run transpiled scripts via its `Executor`
+- [x] Drive step/breakpoint/pause behavior through `Executor::step`/`Fuel` and `CallbackReturn::Yield` (not `debug.sethook` — piccolo doesn't have it)
+- [x] Investigated piccolo's actual API (not just a spike — read its source directly): confirmed it exposes **no** way to inspect a paused frame's position or locals from outside a callback. Worked around at the language level: `lua-transpiler` (revised as part of this phase) emits `__blok_mark(id, name, value, ...)` before every statement, so `runtime` learns both from the call's own arguments
+- [x] `RunEvent::Paused` carries the `BlockId` `__blok_mark` reports directly — no source-map lookup needed at pause time (simpler than planned; see `docs/technical-design.md`'s revised Runtime contract)
+- [x] Step-count cap (`Fuel`-per-step × a maximum step count) stops runaway loops — needed since a loop with no statements in its body never calls `__blok_mark` and so never yields on its own
+- [x] Tested headlessly: real `block-ir` programs → real `lua-transpiler` output → real `runtime::Runtime`, driven via `DebugCommand`s, asserting on the exact `RunEvent` sequence (step-through with locals, breakpoints, `read_input`/`ProvideInput` round-trip, runaway-loop detection) — no UI
+
+Revisited Phase 3 as part of this phase: `lua-transpiler` now emits `__blok_mark` calls with scope-tracked locals (Lua's own block-scoping rules apply — a variable declared inside an `if` branch is out of scope again after it). This also caught a real Lua gotcha via the integration tests: a statement beginning with `(` right after a bare call parses as a continuation of that call (`f()(x)...`, calling `f`'s return value), not a new statement — fixed by terminating every mark call with `;`.
 
 ## Phase 5 — `console`: I/O panel
 

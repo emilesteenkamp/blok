@@ -22,9 +22,16 @@
 //!   Lua table indexing, never `table.insert`/`remove` — piccolo doesn't
 //!   implement those.
 //! - **Console input** (`ReadInput`) lowers to a call to a `read_input()`
-//!   global the `runtime` crate is expected to provide as a host function
-//!   (Phase 4); this crate doesn't implement or assume *how* that function
-//!   suspends for input, only that it exists and returns a string.
+//!   global the `runtime` crate is expected to provide as a host function;
+//!   this crate doesn't implement or assume *how* that function suspends
+//!   for input, only that it exists and returns a string.
+//! - **Every statement** is preceded by a call to `__blok_mark(id, name,
+//!   value, ...)`, reporting its own [`block_ir::BlockId`] and every
+//!   in-scope variable's current value. piccolo exposes no way to inspect
+//!   a suspended frame's position or locals from outside a callback, so
+//!   `runtime` learns both only because the generated Lua reports them
+//!   itself, at every statement — see `docs/technical-design.md`'s
+//!   Runtime contract.
 //!
 //! # Examples
 //!
@@ -45,7 +52,7 @@
 //! };
 //!
 //! let output = lua_transpiler::transpile(&program).unwrap();
-//! assert_eq!(output.source, "print(\"hello, blok\")\n");
+//! assert_eq!(output.source, "__blok_mark(0);\nprint(\"hello, blok\")\n");
 //! ```
 
 #![deny(missing_docs)]
@@ -107,7 +114,7 @@ pub struct Output {
 /// };
 ///
 /// let output = lua_transpiler::transpile(&program).unwrap();
-/// assert_eq!(output.source, "local total = 0\n");
+/// assert_eq!(output.source, "__blok_mark(0);\nlocal total = 0\n");
 /// assert_eq!(output.source_map.line_for(program.body[0].id), Some(1));
 /// ```
 pub fn transpile(program: &Program) -> Result<Output, TranspileError> {
@@ -120,7 +127,8 @@ pub fn transpile(program: &Program) -> Result<Output, TranspileError> {
     }
 
     let mut source_map = SourceMap::new();
-    stmt::lower_body(&program.body, &mut w, &mut source_map)?;
+    let mut scope = Vec::new();
+    stmt::lower_body(&program.body, &mut w, &mut source_map, &mut scope)?;
 
     Ok(Output {
         source: w.finish(),

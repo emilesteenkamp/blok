@@ -4503,12 +4503,18 @@ dependencies = [
 name = "runtime"
 version = "0.1.0"
 dependencies = [
+ "block-ir",
+ "lua-transpiler",
+ "piccolo",
  "runtime-protocol",
 ]
 
 [[package]]
 name = "runtime-protocol"
 version = "0.1.0"
+dependencies = [
+ "block-ir",
+]
 
 [[package]]
 name = "rustc-hash"

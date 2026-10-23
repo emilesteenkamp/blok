@@ -8,8 +8,9 @@ const LUA_KEYWORDS: &[&str] = &[
 
 /// Names the generated code itself relies on, that a block-defined variable
 /// would shadow and break if reused (see [`crate::packages`] and the
-/// `read_input` host intrinsic in [`crate::expr`]).
-const RESERVED_GLOBALS: &[&str] = &["read_input", "math", "string", "print", "pairs"];
+/// `read_input`/`__blok_mark` host intrinsics in [`crate::expr`]/
+/// [`crate::stmt`]).
+const RESERVED_GLOBALS: &[&str] = &["read_input", "__blok_mark", "math", "string", "print", "pairs"];
 
 /// Whether `name` is safe to emit as a Lua identifier: valid Lua identifier
 /// syntax, not a reserved keyword, and not one of the globals generated code
@@ -85,6 +86,7 @@ mod tests {
     #[test]
     fn reserved_global_is_invalid() {
         assert!(!is_valid_identifier("read_input"));
+        assert!(!is_valid_identifier("__blok_mark"));
         assert!(!is_valid_identifier("math"));
     }
 

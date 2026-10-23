@@ -45,6 +45,16 @@ fn run(program: &Program, input: &str) -> Vec<String> {
             });
             ctx.set_global("read_input", read_input_fn)?;
 
+            // `runtime` (Phase 4) is what gives __blok_mark real behavior
+            // (position tracking, pausing); these tests only care that the
+            // generated Lua is syntactically/semantically correct, so it's
+            // a no-op stub here.
+            let mark_fn = Callback::from_fn(&ctx, move |_ctx, _, mut stack| {
+                stack.clear();
+                Ok(CallbackReturn::Return)
+            });
+            ctx.set_global("__blok_mark", mark_fn)?;
+
             let closure = Closure::load(ctx, None, output.source.as_bytes())
                 .unwrap_or_else(|e| panic!("generated Lua failed to parse:\n{}\n\n{e}", output.source));
             Ok(ctx.stash(Executor::start(ctx, closure.into(), ())))
@@ -407,8 +417,11 @@ fn source_map_points_at_the_line_each_statement_was_written_to() {
     };
 
     let output = lua_transpiler::transpile(&program).unwrap();
-    assert_eq!(output.source, "local x = 1\nprint(x)\n");
+    assert_eq!(
+        output.source,
+        "__blok_mark(0);\nlocal x = 1\n__blok_mark(1, \"x\", x);\nprint(x)\n"
+    );
     assert_eq!(output.source_map.line_for(decl_id), Some(1));
-    assert_eq!(output.source_map.line_for(print_id), Some(2));
-    assert_eq!(output.source_map.block_at(2), Some(print_id));
+    assert_eq!(output.source_map.line_for(print_id), Some(3));
+    assert_eq!(output.source_map.block_at(3), Some(print_id));
 }

@@ -4,4 +4,9 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+block-ir = { path = "../block-ir" }
 runtime-protocol = { path = "../runtime-protocol" }
+piccolo = "0.3"
+
+[dev-dependencies]
+lua-transpiler = { path = "../lua-transpiler" }
