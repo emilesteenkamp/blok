@@ -42,6 +42,9 @@ body {
   background: var(--color-bg);
   color: var(--color-fg);
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 .app-shell {
@@ -53,6 +56,34 @@ body {
 }
 
 .empty-state {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
   color: var(--color-fg-muted);
+  font-family: var(--font-mono);
   font-size: 0.95rem;
+}
+
+.empty-state-prompt {
+  color: var(--color-accent);
+}
+
+@keyframes app-cursor-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.cursor {
+  display: inline-block;
+  width: 0.55em;
+  height: 1em;
+  background: var(--color-fg-muted);
+  vertical-align: text-bottom;
+  animation: app-cursor-blink 1.1s steps(1) infinite;
 }

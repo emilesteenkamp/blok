@@ -5,3 +5,8 @@ edition.workspace = true
 
 [dependencies]
 runtime-protocol = { path = "../runtime-protocol" }
+dioxus = { version = "0.7" }
+
+[dev-dependencies]
+dioxus = { version = "0.7", features = ["desktop"] }
+block-ir = { path = "../block-ir" }

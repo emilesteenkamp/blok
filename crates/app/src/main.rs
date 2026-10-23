@@ -21,7 +21,11 @@ fn App() -> Element {
     rsx! {
         document::Stylesheet { href: THEME_CSS }
         div { class: "app-shell",
-            p { class: "empty-state", "Nothing to run yet. Start by dragging in a block." }
+            p { class: "empty-state",
+                span { class: "empty-state-prompt", "❯" }
+                span { "Nothing to run yet. Start by dragging in a block." }
+                span { class: "cursor" }
+            }
         }
     }
 }

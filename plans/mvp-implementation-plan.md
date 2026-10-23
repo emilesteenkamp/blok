@@ -9,7 +9,7 @@ Oct 22, 2026 · @Emile
 - [x] Phase 2 — `block-ir`: shared schema
 - [x] Phase 3 — `lua-transpiler`: IR → Lua + source map
 - [x] Phase 4 — `runtime-protocol` + `runtime`: execution engine
-- [ ] Phase 5 — `console`: I/O panel
+- [x] Phase 5 — `console`: I/O panel
 - [ ] Phase 6 — `block-editor`: the custom DnD workspace
 - [ ] Phase 7 — `debug-panel`: step controls + variable inspector
 - [ ] Phase 8 — App shell integration
@@ -80,10 +80,12 @@ Revisited Phase 3 as part of this phase: `lua-transpiler` now emits `__blok_mark
 
 ## Phase 5 — `console`: I/O panel
 
-- [ ] Dioxus component rendering program output and handling input requests
-- [ ] Consumes `RunEvent`/`DebugCommand` via `runtime-protocol` types only (never imports `runtime` directly)
-- [ ] Styled per design-language (monospace for output, dense panel treatment)
-- [ ] Built and visually reviewed standalone against mocked `RunEvent` streams, before the shell exists
+- [x] Dioxus component rendering program output and handling input requests
+- [x] Consumes `RunEvent`/`DebugCommand` via `runtime-protocol` types only (never imports `runtime` directly)
+- [x] Styled per design-language (monospace for output, dense panel treatment, calm/instructive empty-state copy)
+- [x] Built and visually reviewed standalone against mocked `RunEvent` streams, via a `cargo run -p console --example preview` harness — screenshotted all three states (empty, output + finished, waiting for input)
+
+The preview harness caught a real gap, not just validated the component: it has no app shell, so none of `--color-*`/`--font-*`/`--space-*` were defined anywhere, and every `var(--undefined)` in `console.css` silently fell back to nothing — the panel rendered with zero styling despite the stylesheet loading correctly. Fixed by having the harness define its own copy of the theme tokens (mirroring `crates/app/assets/theme.css`), same as a real app shell would.
 
 ## Phase 6 — `block-editor`: the custom DnD workspace (own workstream)
 
